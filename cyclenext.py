@@ -6,10 +6,6 @@ import platform
 from subprocess import call
 import sys
 
-# TODO: test on Windows
-# TODO: calculate limit dynamically
-# TODO: detect TW directory by looking at .taskrc config file
-
 taskdir = r"/Users/martindemling/task"
 taskcommand = "/usr/local/bin/task"
 filesToWatch = ["undo.data", "backlog.data"]  # this should be enough to get all operations including sync of remote tasks
