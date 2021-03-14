@@ -6,8 +6,12 @@ import platform
 from subprocess import call
 import sys
 
-taskdir = r"/Users/martindemling/task"
-taskcommand = "/usr/local/bin/task"
+# TODO: test on Windows
+# TODO: calculate limit dynamically
+# TODO: detect TW directory by looking at .taskrc config file
+
+taskdir = r"/home/martin/.task"
+taskcommand = "/usr/bin/task"
 filesToWatch = ["undo.data", "backlog.data"]  # this should be enough to get all operations including sync of remote tasks
 getLazyAfterSecs = 3 * 60
 forceRedrawSecs_default = 10  # this also determines the resolution of "last change x ago" info
