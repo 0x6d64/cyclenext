@@ -26,6 +26,7 @@ def redraw(limit, filterstring, seconds_since_change):
     """draw a new task list"""
     limitstring = "limit:{limit}".format(limit=limit)
     minutes_ago = seconds_since_change / 60
+    unsynced_changes = get_sync_backlog_count()
 
     if minutes_ago < 60:
         last_changed_message = "last change %1.0f minutes ago" % minutes_ago
@@ -33,8 +34,9 @@ def redraw(limit, filterstring, seconds_since_change):
         last_changed_message = "last change %1.1f hours ago" % (minutes_ago / 60)
     else:
         last_changed_message = "last change %1.1f days ago" % (minutes_ago / (24 * 60))
+    backlog_message = " - {} unsynced items".format(unsynced_changes) if unsynced_changes else ""
     clear_terminal()
-    print(last_changed_message)
+    print(last_changed_message + backlog_message)
     call([config.get("taskcommand"), filterstring, "rc.gc=off", limitstring])
 
 
@@ -86,6 +88,16 @@ def get_relevant_paths():
     relevant_paths_candidates = [os.path.join(taskdir, item) for item in filenames_to_watch]
     relevant_paths_existing = [item for item in relevant_paths_candidates if os.path.isfile(item)]
     return relevant_paths_existing
+
+def get_sync_backlog_count():
+    backlog_file = os.path.join(config.get("taskdir"), "backlog.data")
+    backlog_count = None
+    if os.path.isfile(backlog_file):
+        with open(backlog_file, "r") as fp:
+            content = fp.readlines()
+        backlog_count = len(content) - 1
+        assert backlog_count >=0
+    return backlog_count
 
 
 def run_main():
