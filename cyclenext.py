@@ -17,12 +17,13 @@ def create_config_dict(config_to_modify):
             "get_lazy_after_secs": 3 * 60,
             "force_redraw_secs_default": 10,
             "loop_delay_secs_default": 0.33,
-            "platform_is_windows": platform.system() == "Windows"
+            "platform_is_windows": platform.system() == "Windows",
+            "debug": False
         }
     )
 
 
-def redraw(limit, filterstring, seconds_since_change):
+def redraw(limit, filter, seconds_since_change):
     """draw a new task list"""
     limitstring = "limit:{limit}".format(limit=limit)
     minutes_ago = seconds_since_change / 60
@@ -35,9 +36,26 @@ def redraw(limit, filterstring, seconds_since_change):
     else:
         last_changed_message = "last change %1.1f days ago" % (minutes_ago / (24 * 60))
     backlog_message = " - {} unsynced items".format(unsynced_changes) if unsynced_changes else ""
+
+    # print the whole thing
     clear_terminal()
     print(last_changed_message + backlog_message)
-    call([config.get("taskcommand"), filterstring, "rc.gc=off", limitstring])
+    call(_get_call_args(filter, limitstring))
+
+
+def _get_call_args(filter, limitstring):
+    call_args = [config.get("taskcommand")]
+    call_args.extend(filter)
+    call_args.append("rc.gc=off")
+    call_args.append("rc.reserved.lines=2")
+    if not config.get("debug"):
+        call_args.append("rc.verbose=nothing")
+
+    custom_limit_in_user_filter = any("limit:" in x for x in filter)
+    if not custom_limit_in_user_filter:
+        call_args.append(limitstring)
+
+    return call_args
 
 
 def get_file_age_secs(filename):
@@ -89,6 +107,7 @@ def get_relevant_paths():
     relevant_paths_existing = [item for item in relevant_paths_candidates if os.path.isfile(item)]
     return relevant_paths_existing
 
+
 def get_sync_backlog_count():
     backlog_file = os.path.join(config.get("taskdir"), "backlog.data")
     backlog_count = None
@@ -96,7 +115,7 @@ def get_sync_backlog_count():
         with open(backlog_file, "r") as fp:
             content = fp.readlines()
         backlog_count = len(content) - 1
-        assert backlog_count >=0
+        assert backlog_count >= 0
     return backlog_count
 
 
@@ -106,7 +125,11 @@ def run_main():
     path_list = get_relevant_paths()
     time_since_redraw = 0.0
     terminal_size_old = (0, 0)
-    taskw_filter_string = sys.argv[1] if len(sys.argv) > 1 else 'ready'  # use ready as default filter
+    filter_given = len(sys.argv) > 1
+    if filter_given:
+        taskw_filter = sys.argv[1:]
+    else:
+        taskw_filter = "ready"
 
     try:
         while True:
@@ -121,7 +144,7 @@ def run_main():
             file_changed = (file_age_seconds < (loop_delay_seconds * 1.8))
 
             if terminal_size_did_change or force_redraw or file_changed:
-                redraw(calc_terminal_size_limit(terminal_size), taskw_filter_string, file_age_seconds)
+                redraw(calc_terminal_size_limit(terminal_size), taskw_filter, file_age_seconds)
                 #             print('\a') # terminal bell for debug
                 time_since_redraw = 0
                 time.sleep(loop_delay_seconds)
