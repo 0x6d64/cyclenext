@@ -29,17 +29,18 @@ def redraw(limit, filter, seconds_since_change):
     minutes_ago = seconds_since_change / 60
     unsynced_changes = get_sync_backlog_count()
 
+    filter_message = "filter: {}".format(" ".join(filter))
     if minutes_ago < 60:
-        last_changed_message = "last change %1.0f minutes ago" % minutes_ago
+        last_changed_message = " - last change %1.0f minutes ago" % minutes_ago
     elif minutes_ago < (24 * 60):
-        last_changed_message = "last change %1.1f hours ago" % (minutes_ago / 60)
+        last_changed_message = " - last change %1.1f hours ago" % (minutes_ago / 60)
     else:
-        last_changed_message = "last change %1.1f days ago" % (minutes_ago / (24 * 60))
+        last_changed_message = " - last change %1.1f days ago" % (minutes_ago / (24 * 60))
     backlog_message = " - {} unsynced items".format(unsynced_changes) if unsynced_changes else ""
 
     # print the whole thing
     clear_terminal()
-    print(last_changed_message + backlog_message)
+    print(filter_message + last_changed_message + backlog_message)
     call(_get_call_args(filter, limitstring))
 
 
