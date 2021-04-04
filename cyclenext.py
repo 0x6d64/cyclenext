@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os
 import time
@@ -14,6 +14,7 @@ def create_config_dict(config_to_modify):
         {
             "taskdir": os.path.join(os.path.expanduser("~/.task")),
             "taskcommand": "/usr/bin/task",
+            "default_limit": "page",
             "get_lazy_after_secs": 3 * 60,
             "force_redraw_secs_default": 10,
             "loop_delay_secs_default": 0.33,
@@ -23,9 +24,8 @@ def create_config_dict(config_to_modify):
     )
 
 
-def redraw(limit, filter, seconds_since_change):
+def redraw(filter=None, seconds_since_change=None):
     """draw a new task list"""
-    limitstring = "limit:{limit}".format(limit=limit)
     minutes_ago = seconds_since_change / 60
     unsynced_changes = get_sync_backlog_count()
 
@@ -41,10 +41,10 @@ def redraw(limit, filter, seconds_since_change):
     # print the whole thing
     clear_terminal()
     print(filter_message + last_changed_message + backlog_message)
-    call(_get_call_args(filter, limitstring))
+    call(_get_call_args(filter))
 
 
-def _get_call_args(filter, limitstring):
+def _get_call_args(filter):
     call_args = [config.get("taskcommand")]
     call_args.extend(filter)
     call_args.append("rc.gc=off")
@@ -52,8 +52,9 @@ def _get_call_args(filter, limitstring):
     if not config.get("debug"):
         call_args.append("rc.verbose=nothing")
 
-    custom_limit_in_user_filter = any("limit:" in x for x in filter)
-    if not custom_limit_in_user_filter:
+    limit_requested_in_user_filter = any("limit:" in x for x in filter)
+    if not limit_requested_in_user_filter:
+        limitstring = "limit:{}".format(config.get("default_limit"))
         call_args.append(limitstring)
 
     return call_args
@@ -75,27 +76,6 @@ def get_minimal_age_secs(path_list):
 def clear_terminal():
     clear_command = 'cls' if config.get("platform_is_windows") else "clear"
     os.system(clear_command)
-
-
-def calc_terminal_size_limit(termsize):
-    """
-    calculates the number of lines to display based on available lines and columns in terminal
-    a narrow terminal can support only a few lines due to the description being wrapped
-    all values here are determined by experience
-
-    :param termsize:
-    :return:
-    """
-    terminal_lines = int(termsize[0])
-    terminal_columns = int(termsize[1])
-    if terminal_columns > 90:
-        factor = 0.6
-    elif terminal_columns > 65:
-        factor = 0.4
-    else:
-        factor = 0.2
-    limit = int(terminal_lines * factor)
-    return limit if limit > 0 else 1
 
 
 def get_relevant_paths():
@@ -130,7 +110,7 @@ def run_main():
     if filter_given:
         taskw_filter = sys.argv[1:]
     else:
-        taskw_filter = "ready"
+        taskw_filter = ["ready"]
 
     try:
         while True:
@@ -145,7 +125,7 @@ def run_main():
             file_changed = (file_age_seconds < (loop_delay_seconds * 1.8))
 
             if terminal_size_did_change or force_redraw or file_changed:
-                redraw(calc_terminal_size_limit(terminal_size), taskw_filter, file_age_seconds)
+                redraw(filter=taskw_filter, seconds_since_change=file_age_seconds)
                 #             print('\a') # terminal bell for debug
                 time_since_redraw = 0
                 time.sleep(loop_delay_seconds)
