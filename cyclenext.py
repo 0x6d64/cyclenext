@@ -94,7 +94,8 @@ def _get_call_args(task_filter):
     call_args.append("rc.gc=off")
     call_args.append("rc.reserved.lines=2")
     if not config.get("debug"):
-        call_args.append("rc.verbose=nothing")
+        configstring_label_only = "rc.verbose=label"
+        call_args.append(configstring_label_only)
 
     limit_requested_in_user_filter = any("limit:" in x for x in task_filter)
     if not limit_requested_in_user_filter:
