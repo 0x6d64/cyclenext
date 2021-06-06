@@ -91,11 +91,11 @@ def redraw(task_filter=None, seconds_since_change=None, unsynced_count=None):
 def _get_call_args(task_filter):
     call_args = [config.get("taskcommand")]
     call_args.extend(task_filter)
+    if not config.get("debug"):
+        configstring_label_only = "rc.verbose=label,nothing"
+        call_args.append(configstring_label_only)
     call_args.append("rc.gc=off")
     call_args.append("rc.reserved.lines=2")
-    if not config.get("debug"):
-        configstring_label_only = "rc.verbose=label"
-        call_args.append(configstring_label_only)
 
     limit_requested_in_user_filter = any("limit:" in x for x in task_filter)
     if not limit_requested_in_user_filter:
