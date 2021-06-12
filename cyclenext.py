@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import subprocess
 import time
 import platform
 from subprocess import call
@@ -13,7 +14,7 @@ def create_config_dict(config_to_modify):
     config_to_modify.update(
         {
             "taskdir": os.path.join(os.path.expanduser("~/.task")),
-            "taskcommand": "/usr/bin/task",
+            "taskcommand": None,
             "default_limit": "page",
             "get_lazy_after_secs": 3 * 60,
             "force_redraw_secs_default": 10,
@@ -23,6 +24,16 @@ def create_config_dict(config_to_modify):
         }
     )
 
+class TaskwarriorSetup(object):
+    def __init__(self):
+        self._confirmed_bin = None
+
+    @property
+    def binary(self):
+        if not self._confirmed_bin:
+            which_raw = subprocess.check_output(["which", "task"]).decode(sys.getdefaultencoding())
+            self._confirmed_bin = which_raw.replace("\n", "")
+        return self._confirmed_bin
 
 class TaskwarriorFiles(object):
     def __init__(self):
@@ -113,6 +124,8 @@ def clear_terminal():
 def run_main():
     create_config_dict(config)
     data_files = TaskwarriorFiles()
+    setup = TaskwarriorSetup()
+    config["taskcommand"] = setup.binary
 
     time_since_redraw = 0.0
     terminal_size_old = (0, 0)
